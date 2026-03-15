@@ -603,20 +603,6 @@
 
       const file = new File([blob], fileName, { type: 'application/json' });
 
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: 'Bautagebuch-Backup',
-            text: 'Backup aus meiner Bautagebuch-App.'
-          });
-          alert('Backup geteilt.');
-          return;
-        } catch (err) {
-          console.error('Share abgebrochen/fehlerhaft', err);
-        }
-      }
-
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -789,21 +775,6 @@ ${e.taetigkeit || ''}
       zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
         .then(async (content) => {
           const blob = content;
-          const file = new File([blob], fileName, { type: 'application/zip' });
-
-          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-              await navigator.share({
-                files: [file],
-                title: 'Bautagebuch-Export',
-                text: 'Export-Datei aus der Bautagebuch-App.'
-              });
-              return;
-            } catch (err) {
-              console.error('Share abgebrochen/Fehler', err);
-            }
-          }
-
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
