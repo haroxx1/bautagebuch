@@ -8,6 +8,7 @@
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
+
   <style>
     body { font-family: system-ui, sans-serif; margin: 0; padding: 0; background:#f5f5f5; }
     header { padding: 10px 15px; background:#222; color:#fff; }
@@ -27,7 +28,7 @@
     .row { display:flex; gap:8px; }
     .row > div { flex:1; }
     .card { background:#fff; padding:10px; margin-bottom:8px; border-radius:4px;
-            box-shadow:0 1px 2px rgba(0,0,0,0.05); }
+      box-shadow:0 1px 2px rgba(0,0,0,0.05); }
     .small { font-size:12px; color:#555; }
     table { width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
     th, td { border:1px solid #ddd; padding:4px; text-align:left; }
@@ -35,531 +36,818 @@
     .chip { display:inline-block; background:#eee; padding:2px 6px; border-radius:10px; font-size:11px; margin-right:4px; }
     img.thumb { width:60px; height:60px; object-fit:cover; border-radius:4px; margin-right:4px; }
   </style>
+
+  <!-- JSZip für ZIP-Export -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
-<header>
-  <div>Bautagebuch (Lokal)</div>
-</header>
+  <header>
+    <h1 style="font-size:18px;margin:0;">Bautagebuch (Lokal)</h1>
+  </header>
 
-<div class="tabs">
-  <div class="tab active" data-view="tag">Tag</div>
-  <div class="tab" data-view="woche">Woche</div>
-  <div class="tab" data-view="monat">Monat</div>
-  <div class="tab" data-view="projekte">Projekte</div>
-</div>
-
-<main>
-  <!-- Tag -->
-  <section id="view-tag" class="view active">
-    <div class="card">
-      <label>Datum
-        <input type="date" id="tag-datum">
-      </label>
-      <div class="row">
-        <div>
-          <label>Projekt
-            <select id="tag-projekt"></select>
-          </label>
-        </div>
-        <div>
-          <label>Ort
-            <input type="text" id="tag-ort">
-          </label>
-        </div>
-      </div>
-      <div class="row">
-        <div>
-          <label>Beginn
-            <select id="tag-start"></select>
-          </label>
-        </div>
-        <div>
-          <label>Ende
-            <select id="tag-ende"></select>
-          </label>
-        </div>
-      </div>
-      <label>Tätigkeit
-        <textarea id="tag-taetigkeit" rows="3" placeholder="Was wurde gemacht?"></textarea>
-      </label>
-      <label>Fotos
-        <input type="file" id="tag-fotos" accept="image/*" capture="environment" multiple>
-      </label>
-      <div id="tag-foto-preview"></div>
-      <button id="tag-speichern">Tag speichern</button>
-      <div class="small" id="tag-info"></div>
+  <main>
+    <div class="tabs">
+      <div class="tab active" data-view="tag">Tag</div>
+      <div class="tab" data-view="woche">Woche</div>
+      <div class="tab" data-view="monat">Monat</div>
+      <div class="tab" data-view="projekte">Projekte</div>
     </div>
-  </section>
 
-  <!-- Woche -->
-  <section id="view-woche" class="view">
-    <div class="card">
-      <label>Datum innerhalb der Woche wählen
-        <input type="date" id="woche-datum">
-      </label>
-      <div id="woche-summary" class="small" style="margin-top:6px;"></div>
-      <table id="woche-table">
-        <thead>
+    <!-- Tages-Ansicht -->
+    <div id="view-tag" class="view active">
+      <div class="card">
+        <label>Datum
+          <input type="date" id="tag-datum">
+        </label>
+
+        <div class="row">
+          <div>
+            <label>Projekt
+              <select id="tag-projekt"></select>
+            </label>
+          </div>
+          <div>
+            <label>Ort
+              <input type="text" id="tag-ort">
+            </label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Beginn
+              <select id="tag-start"></select>
+            </label>
+          </div>
+          <div>
+            <label>Ende
+              <select id="tag-ende"></select>
+            </label>
+          </div>
+        </div>
+
+        <label>Tätigkeit
+          <textarea id="tag-taetigkeit" rows="3" placeholder="Was wurde gemacht?"></textarea>
+        </label>
+
+        <label>Fotos
+          <input type="file" id="tag-fotos" accept="image/*" capture="environment" multiple>
+        </label>
+        <div id="tag-foto-preview"></div>
+
+        <button id="tag-speichern">Tag speichern</button>
+        <div class="small" id="tag-info"></div>
+      </div>
+    </div>
+
+    <!-- Wochen-Ansicht -->
+    <div id="view-woche" class="view">
+      <div class="card">
+        <label>Datum innerhalb der Woche wählen
+          <input type="date" id="woche-datum">
+        </label>
+        <div id="woche-summary" class="small" style="margin-top:6px;"></div>
+        <table id="woche-table">
+          <thead>
           <tr>
-            <th>Tag</th><th>Datum</th><th>Start-Ende</th><th>Stunden</th><th>Projekt(e)</th><th>Ort(e)</th>
+            <th>Tag</th>
+            <th>Datum</th>
+            <th>Start-Ende</th>
+            <th>Stunden</th>
+            <th>Projekt(e)</th>
+            <th>Ort(e)</th>
           </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
-  </section>
 
-  <!-- Monat -->
-  <section id="view-monat" class="view">
-    <div class="card">
-      <div class="row">
-        <div>
-          <label>Monat
-            <select id="monat-monat">
-              <option value="0">Jan</option>
-              <option value="1">Feb</option>
-              <option value="2">Mrz</option>
-              <option value="3">Apr</option>
-              <option value="4">Mai</option>
-              <option value="5">Jun</option>
-              <option value="6">Jul</option>
-              <option value="7">Aug</option>
-              <option value="8">Sep</option>
-              <option value="9">Okt</option>
-              <option value="10">Nov</option>
-              <option value="11">Dez</option>
-            </select>
-          </label>
+    <!-- Monats-Ansicht -->
+    <div id="view-monat" class="view">
+      <div class="card">
+        <div class="row">
+          <div>
+            <label>Monat
+              <select id="monat-monat">
+                <option value="0">Jan</option>
+                <option value="1">Feb</option>
+                <option value="2">Mrz</option>
+                <option value="3">Apr</option>
+                <option value="4">Mai</option>
+                <option value="5">Jun</option>
+                <option value="6">Jul</option>
+                <option value="7">Aug</option>
+                <option value="8">Sep</option>
+                <option value="9">Okt</option>
+                <option value="10">Nov</option>
+                <option value="11">Dez</option>
+              </select>
+            </label>
+          </div>
+          <div>
+            <label>Jahr
+              <input type="number" id="monat-jahr" min="2020" max="2100">
+            </label>
+          </div>
         </div>
-        <div>
-          <label>Jahr
-            <input type="number" id="monat-jahr" min="2020" max="2100">
-          </label>
+        <div id="monat-summary" class="small" style="margin-top:6px;"></div>
+        <table id="monat-table">
+          <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Wochentag</th>
+            <th>Stunden</th>
+            <th>Projekt(e)</th>
+            <th>Ort(e)</th>
+          </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Projekte + Export -->
+    <div id="view-projekte" class="view">
+      <div class="card">
+        <button id="projekt-neu">Neues Projekt</button>
+      </div>
+
+      <!-- NEU: Projekt-Export -->
+      <div class="card">
+        <label>Projekt für Export wählen
+          <select id="export-projekt"></select>
+        </label>
+        <button id="export-zip-projekt">ZIP-Export für ausgewähltes Projekt</button>
+        <div class="small">
+          Erstellt ein ZIP mit allen Tagen (Bericht + Fotos) nur für dieses Projekt.
         </div>
       </div>
-      <div id="monat-summary" class="small" style="margin-top:6px;"></div>
-      <table id="monat-table">
-        <thead>
-          <tr>
-            <th>Datum</th><th>Wochentag</th><th>Stunden</th><th>Projekt(e)</th><th>Ort(e)</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+
+      <div class="card">
+        <button id="export-json">Backup exportieren (JSON teilen)</button>
+        <div class="small">
+          Exportiert alle Projekte und Bautagebuch-Einträge als JSON-Datei, die du z.B. per WhatsApp oder E‑Mail verschicken kannst.
+        </div>
+      </div>
+
+      <div class="card">
+        <button id="export-zip">Backup als ZIP (Berichte + Fotos)</button>
+        <div class="small">
+          Erstellt ein ZIP mit Tagesordnern, Textberichten und Fotos, das du z.B. per WhatsApp oder E‑Mail teilen kannst.
+        </div>
+      </div>
+
+      <div id="projekt-liste"></div>
     </div>
-  </section>
+  </main>
 
-  <!-- Projekte -->
-  <section id="view-projekte" class="view">
-    <div class="card">
-      <button id="projekt-neu">Neues Projekt</button>
-    </div>
-    <div id="projekt-liste"></div>
-  </section>
-</main>
+  <script>
+    // --- IndexedDB Setup ---
+    let db;
+    const DB_NAME = 'bautagebuch-db';
+    const DB_VERSION = 1;
 
-<script>
-  // --- IndexedDB Setup ---
-  let db;
-  const DB_NAME = 'bautagebuch-db';
-  const DB_VERSION = 1;
+    function openDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('projekte')) {
+            const store = db.createObjectStore('projekte', { keyPath: 'id', autoIncrement: true });
+            store.createIndex('aktiv', 'aktiv', { unique: false });
+          }
+          if (!db.objectStoreNames.contains('eintraege')) {
+            const store = db.createObjectStore('eintraege', { keyPath: 'id', autoIncrement: true });
+            store.createIndex('datum', 'datum', { unique: false });
+          }
+        };
+        req.onsuccess = (e) => { db = e.target.result; resolve(); };
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
 
-  function openDb() {
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = (e) => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains('projekte')) {
-          const store = db.createObjectStore('projekte', { keyPath: 'id', autoIncrement: true });
-          store.createIndex('aktiv', 'aktiv', { unique: false });
+    function tx(storeName, mode='readonly') {
+      return db.transaction(storeName, mode).objectStore(storeName);
+    }
+
+    function getAll(storeName) {
+      return new Promise((resolve, reject) => {
+        const store = tx(storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function addOrPut(storeName, value) {
+      return new Promise((resolve, reject) => {
+        const store = tx(storeName, 'readwrite');
+        const req = store.put(value);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function deleteById(storeName, id) {
+      return new Promise((resolve, reject) => {
+        const store = tx(storeName, 'readwrite');
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    // --- Helpers ---
+    function pad2(n) { return n.toString().padStart(2, '0'); }
+
+    function buildTimeOptions() {
+      const times = [];
+      for (let h=0; h<24; h++) {
+        for (let m=0; m<60; m+=15) {
+          times.push(pad2(h)+':'+pad2(m));
         }
-        if (!db.objectStoreNames.contains('eintraege')) {
-          const store = db.createObjectStore('eintraege', { keyPath: 'id', autoIncrement: true });
-          store.createIndex('datum', 'datum', { unique: false });
-        }
-      };
-      req.onsuccess = (e) => { db = e.target.result; resolve(); };
-      req.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  function tx(storeName, mode='readonly') {
-    return db.transaction(storeName, mode).objectStore(storeName);
-  }
-
-  function getAll(storeName) {
-    return new Promise((resolve, reject) => {
-      const store = tx(storeName);
-      const req = store.getAll();
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  function addOrPut(storeName, value) {
-    return new Promise((resolve, reject) => {
-      const store = tx(storeName, 'readwrite');
-      const req = store.put(value);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  function deleteById(storeName, id) {
-    return new Promise((resolve, reject) => {
-      const store = tx(storeName, 'readwrite');
-      const req = store.delete(id);
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  function getByIndex(storeName, indexName, value) {
-    return new Promise((resolve, reject) => {
-      const store = tx(storeName);
-      const index = store.index(indexName);
-      const req = index.getAll(value);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = (e) => reject(e.target.error);
-    });
-  }
-
-  // --- Helpers ---
-  function pad2(n) { return n.toString().padStart(2, '0'); }
-
-  function buildTimeOptions() {
-    const times = [];
-    for (let h=0; h<24; h++) {
-      for (let m=0; m<60; m+=15) {
-        times.push(pad2(h)+':'+pad2(m));
       }
+      return times;
     }
-    return times;
-  }
 
-  function diffHours(start, end) {
-    const [sh, sm] = start.split(':').map(Number);
-    const [eh, em] = end.split(':').map(Number);
-    const s = sh*60 + sm;
-    const e = eh*60 + em;
-    if (e <= s) return 0;
-    return (e - s)/60;
-  }
+    function diffHours(start, end) {
+      const [sh, sm] = start.split(':').map(Number);
+      const [eh, em] = end.split(':').map(Number);
+      const s = sh*60 + sm;
+      const e = eh*60 + em;
+      if (e <= s) return 0;
+      return (e - s)/60;
+    }
 
-  function getWeekRange(dateStr) {
-    const d = new Date(dateStr);
-    // Montag als Wochenstart
-    const day = d.getDay() === 0 ? 7 : d.getDay();
-    const monday = new Date(d);
-    monday.setDate(d.getDate() - (day-1));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-    return { monday, sunday };
-  }
+    function getWeekRange(dateStr) {
+      const d = new Date(dateStr);
+      const day = d.getDay() === 0 ? 7 : d.getDay(); // Montag = 1
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - (day-1));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      return { monday, sunday };
+    }
 
-  function isSameDay(a, b) {
-    return a.getFullYear()===b.getFullYear() &&
-           a.getMonth()===b.getMonth() &&
-           a.getDate()===b.getDate();
-  }
+    function weekdayName(d) {
+      return ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][d.getDay()];
+    }
 
-  function weekdayName(d) {
-    return ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][d.getDay()];
-  }
+    function formatDate(d) {
+      return pad2(d.getDate())+'.'+pad2(d.getMonth()+1)+'.'+d.getFullYear().toString().slice(-2);
+    }
 
-  function formatDate(d) {
-    return pad2(d.getDate())+'.'+pad2(d.getMonth()+1)+'.'+d.getFullYear().toString().slice(-2);
-  }
-
-  // --- UI Init ---
-  const timeOptions = buildTimeOptions();
-  const selStart = document.getElementById('tag-start');
-  const selEnd = document.getElementById('tag-ende');
-  timeOptions.forEach(t => {
-    const o1 = document.createElement('option');
-    o1.value = t; o1.textContent = t;
-    selStart.appendChild(o1);
-    const o2 = document.createElement('option');
-    o2.value = t; o2.textContent = t;
-    selEnd.appendChild(o2);
-  });
-
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      tab.classList.add('active');
-      document.getElementById('view-'+tab.dataset.view).classList.add('active');
-      if (tab.dataset.view === 'woche') refreshWoche();
-      if (tab.dataset.view === 'monat') refreshMonat();
-      if (tab.dataset.view === 'projekte') refreshProjekte();
+    // --- UI Init ---
+    const timeOptions = buildTimeOptions();
+    const selStart = document.getElementById('tag-start');
+    const selEnd = document.getElementById('tag-ende');
+    timeOptions.forEach(t => {
+      const o1 = document.createElement('option');
+      o1.value = t; o1.textContent = t;
+      selStart.appendChild(o1);
+      const o2 = document.createElement('option');
+      o2.value = t; o2.textContent = t;
+      selEnd.appendChild(o2);
     });
-  });
 
-  // --- Projekte ---
-  const projektSelect = document.getElementById('tag-projekt');
-  const projektListeDiv = document.getElementById('projekt-liste');
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('view-'+tab.dataset.view).classList.add('active');
+        if (tab.dataset.view === 'woche') refreshWoche();
+        if (tab.dataset.view === 'monat') refreshMonat();
+        if (tab.dataset.view === 'projekte') refreshProjekte();
+      });
+    });
 
-  async function refreshProjekte() {
-    const projekte = await getAll('projekte');
-    projektListeDiv.innerHTML = '';
-    projektSelect.innerHTML = '';
-    projekte.filter(p => p.aktiv !== false).forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = p.name;
-      projektSelect.appendChild(opt);
-    });
-    projekte.forEach(p => {
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <div><strong>${p.name}</strong></div>
-        <div class="small">${p.ort || ''}</div>
-        <div class="small">Status: ${p.aktiv === false ? 'inaktiv' : 'aktiv'}</div>
-        <div style="margin-top:6px;" class="row">
-          <div><button data-id="${p.id}" class="projekt-edit">Bearbeiten</button></div>
-          <div><button data-id="${p.id}" class="projekt-del secondary">Löschen/Inaktiv</button></div>
-        </div>
-      `;
-      projektListeDiv.appendChild(div);
-    });
-    projektListeDiv.querySelectorAll('.projekt-edit').forEach(btn => {
-      btn.onclick = async () => {
-        const id = Number(btn.dataset.id);
-        const projekte = await getAll('projekte');
-        const p = projekte.find(x => x.id === id);
-        if (!p) return;
-        const name = prompt('Projektname:', p.name);
-        if (!name) return;
-        const ort = prompt('Ort:', p.ort || '');
-        const aktiv = confirm('Projekt aktiv? OK = aktiv, Abbrechen = inaktiv');
-        p.name = name; p.ort = ort; p.aktiv = aktiv;
-        await addOrPut('projekte', p);
-        refreshProjekte();
-      };
-    });
-    projektListeDiv.querySelectorAll('.projekt-del').forEach(btn => {
-      btn.onclick = async () => {
-        const id = Number(btn.dataset.id);
-        const projekte = await getAll('projekte');
-        const p = projekte.find(x => x.id === id);
-        if (!p) return;
-        const choice = confirm('OK = Projekt inaktiv setzen, Abbrechen = komplett löschen (vorsicht, Einträge bleiben ohne Bezug).');
-        if (choice) {
-          p.aktiv = false;
+    // --- Projekte ---
+    const projektSelect = document.getElementById('tag-projekt');
+    const projektListeDiv = document.getElementById('projekt-liste');
+
+    async function refreshProjekte() {
+      const projekte = await getAll('projekte');
+      projektListeDiv.innerHTML = '';
+      projektSelect.innerHTML = '';
+
+      // Dropdown für Tagesansicht (nur aktive Projekte)
+      projekte.filter(p => p.aktiv !== false).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        projektSelect.appendChild(opt);
+      });
+
+      // NEU: Export-Projekt-Select befüllen
+      const exportProjektSelect = document.getElementById('export-projekt');
+      if (exportProjektSelect) {
+        exportProjektSelect.innerHTML = '';
+        projekte.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          opt.textContent = p.name + (p.aktiv === false ? ' (inaktiv)' : '');
+          exportProjektSelect.appendChild(opt);
+        });
+      }
+
+      // Karten-Liste der Projekte
+      projekte.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.innerHTML = `
+          <div><strong>${p.name}</strong></div>
+          <div class="small">${p.ort || ''}</div>
+          <div class="small">Status: ${p.aktiv === false ? 'inaktiv' : 'aktiv'}</div>
+          <div class="row" style="margin-top:6px;">
+            <div>
+              <button data-id="${p.id}" class="projekt-edit">Bearbeiten</button>
+            </div>
+            <div>
+              <button data-id="${p.id}" class="projekt-del secondary">Löschen/Inaktiv</button>
+            </div>
+          </div>
+        `;
+        projektListeDiv.appendChild(div);
+      });
+
+      // Click-Handler
+      projektListeDiv.querySelectorAll('.projekt-edit').forEach(btn => {
+        btn.onclick = async () => {
+          const id = Number(btn.dataset.id);
+          const projekte = await getAll('projekte');
+          const p = projekte.find(x => x.id === id);
+          if (!p) return;
+          const name = prompt('Projektname:', p.name);
+          if (!name) return;
+          const ort = prompt('Ort:', p.ort || '');
+          const aktiv = confirm('Projekt aktiv? OK = aktiv, Abbrechen = inaktiv');
+          p.name = name; p.ort = ort; p.aktiv = aktiv;
           await addOrPut('projekte', p);
-        } else {
-          await deleteById('projekte', id);
-        }
-        refreshProjekte();
-      };
+          refreshProjekte();
+        };
+      });
+
+      projektListeDiv.querySelectorAll('.projekt-del').forEach(btn => {
+        btn.onclick = async () => {
+          const id = Number(btn.dataset.id);
+          const projekte = await getAll('projekte');
+          const p = projekte.find(x => x.id === id);
+          if (!p) return;
+          const choice = confirm('OK = Projekt inaktiv setzen, Abbrechen = komplett löschen (Einträge bleiben).');
+          if (choice) {
+            p.aktiv = false;
+            await addOrPut('projekte', p);
+          } else {
+            await deleteById('projekte', id);
+          }
+          refreshProjekte();
+        };
+      });
+    }
+
+    document.getElementById('projekt-neu').addEventListener('click', async () => {
+      const name = prompt('Projektname:');
+      if (!name) return;
+      const ort = prompt('Ort:');
+      await addOrPut('projekte', { name, ort, aktiv:true });
+      refreshProjekte();
     });
-  }
 
-  document.getElementById('projekt-neu').addEventListener('click', async () => {
-    const name = prompt('Projektname:');
-    if (!name) return;
-    const ort = prompt('Ort:');
-    await addOrPut('projekte', { name, ort, aktiv:true });
-    refreshProjekte();
-  });
-
-  projektSelect.addEventListener('change', async () => {
-    const id = Number(projektSelect.value);
-    const projekte = await getAll('projekte');
-    const p = projekte.find(x => x.id === id);
-    if (p && p.ort) document.getElementById('tag-ort').value = p.ort;
-  });
-
-  // --- Tag speichern ---
-  const tagDatum = document.getElementById('tag-datum');
-  const tagOrt = document.getElementById('tag-ort');
-  const tagTaet = document.getElementById('tag-taetigkeit');
-  const tagFotos = document.getElementById('tag-fotos');
-  const tagFotoPreview = document.getElementById('tag-foto-preview');
-  const tagInfo = document.getElementById('tag-info');
-
-  tagFotos.addEventListener('change', () => {
-    tagFotoPreview.innerHTML = '';
-    Array.from(tagFotos.files).forEach(file => {
-      const img = document.createElement('img');
-      img.className = 'thumb';
-      const reader = new FileReader();
-      reader.onload = (e) => img.src = e.target.result;
-      reader.readAsDataURL(file);
-      tagFotoPreview.appendChild(img);
+    projektSelect.addEventListener('change', async () => {
+      const id = Number(projektSelect.value);
+      const projekte = await getAll('projekte');
+      const p = projekte.find(x => x.id === id);
+      if (p && p.ort) document.getElementById('tag-ort').value = p.ort;
     });
-  });
 
-  document.getElementById('tag-speichern').addEventListener('click', async () => {
-    if (!tagDatum.value) { alert('Bitte Datum wählen'); return; }
-    if (!projektSelect.value) { alert('Bitte Projekt wählen'); return; }
-    const start = selStart.value;
-    const ende = selEnd.value;
-    const h = diffHours(start, ende);
-    const fotos = [];
-    for (const file of tagFotos.files) {
-      const dataUrl = await new Promise((resolve, reject) => {
+    // --- Tag speichern ---
+    const tagDatum = document.getElementById('tag-datum');
+    const tagOrt = document.getElementById('tag-ort');
+    const tagTaet = document.getElementById('tag-taetigkeit');
+    const tagFotos = document.getElementById('tag-fotos');
+    const tagFotoPreview = document.getElementById('tag-foto-preview');
+    const tagInfo = document.getElementById('tag-info');
+
+    tagFotos.addEventListener('change', () => {
+      tagFotoPreview.innerHTML = '';
+      Array.from(tagFotos.files).forEach(file => {
+        const img = document.createElement('img');
+        img.className = 'thumb';
         const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = e => reject(e);
+        reader.onload = (e) => img.src = e.target.result;
         reader.readAsDataURL(file);
+        tagFotoPreview.appendChild(img);
       });
-      fotos.push(dataUrl);
-    }
-    const eintrag = {
-      datum: tagDatum.value,
-      projektId: Number(projektSelect.value),
-      ort: tagOrt.value,
-      start, ende,
-      taetigkeit: tagTaet.value,
-      stunden: h,
-      fotos
-    };
-    await addOrPut('eintraege', eintrag);
-    tagInfo.textContent = 'Gespeichert. Arbeitszeit: ' + h.toFixed(2) + ' h';
-    tagFotos.value = '';
-    tagFotoPreview.innerHTML = '';
-  });
-
-  // --- Woche ---
-  const wocheDatum = document.getElementById('woche-datum');
-  const wocheTableBody = document.querySelector('#woche-table tbody');
-  const wocheSummary = document.getElementById('woche-summary');
-
-  async function refreshWoche() {
-    const basisDatum = wocheDatum.value || new Date().toISOString().slice(0,10);
-    wocheDatum.value = basisDatum;
-    const { monday, sunday } = getWeekRange(basisDatum);
-    const eintraege = await getAll('eintraege');
-    const projekte = await getAll('projekte');
-
-    const rows = [];
-    let sum = 0;
-    for (let d = new Date(monday); d <= sunday; d.setDate(d.getDate()+1)) {
-      const ds = d.toISOString().slice(0,10);
-      const dayEntries = eintraege.filter(e => e.datum === ds);
-      const stunden = dayEntries.reduce((acc,e) => acc + (e.stunden || 0), 0);
-      sum += stunden;
-      const projSet = new Set();
-      const ortSet = new Set();
-      dayEntries.forEach(e => {
-        const p = projekte.find(x => x.id === e.projektId);
-        if (p) projSet.add(p.name);
-        if (e.ort) ortSet.add(e.ort);
-      });
-      const first = dayEntries[0];
-      const startEnd = first ? (first.start + '–' + first.ende) : '';
-      rows.push({
-        tag: weekdayName(d),
-        datum: formatDate(d),
-        startEnd,
-        stunden,
-        projekte: Array.from(projSet).join(', '),
-        orte: Array.from(ortSet).join(', ')
-      });
-    }
-    wocheTableBody.innerHTML = '';
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${r.tag}</td>
-        <td>${r.datum}</td>
-        <td>${r.startEnd}</td>
-        <td>${r.stunden.toFixed(2)}</td>
-        <td>${r.projekte}</td>
-        <td>${r.orte}</td>
-      `;
-      wocheTableBody.appendChild(tr);
     });
-    wocheSummary.textContent = 'Gesamtstunden in dieser Woche: ' + sum.toFixed(2) + ' h';
-  }
 
-  wocheDatum.addEventListener('change', refreshWoche);
+    document.getElementById('tag-speichern').addEventListener('click', async () => {
+      if (!tagDatum.value) { alert('Bitte Datum wählen'); return; }
+      if (!projektSelect.value) { alert('Bitte Projekt wählen'); return; }
+      const start = selStart.value;
+      const ende = selEnd.value;
+      const h = diffHours(start, ende);
 
-  // --- Monat ---
-  const monatMonat = document.getElementById('monat-monat');
-  const monatJahr = document.getElementById('monat-jahr');
-  const monatTableBody = document.querySelector('#monat-table tbody');
-  const monatSummary = document.getElementById('monat-summary');
+      const fotos = [];
+      for (const file of tagFotos.files) {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = e => reject(e);
+          reader.readAsDataURL(file);
+        });
+        fotos.push(dataUrl);
+      }
 
-  monatMonat.addEventListener('change', refreshMonat);
-  monatJahr.addEventListener('change', refreshMonat);
+      const eintrag = {
+        datum: tagDatum.value,
+        projektId: Number(projektSelect.value),
+        ort: tagOrt.value,
+        start, ende,
+        taetigkeit: tagTaet.value,
+        stunden: h,
+        fotos
+      };
+      await addOrPut('eintraege', eintrag);
+      tagInfo.textContent = 'Gespeichert. Arbeitszeit: ' + h.toFixed(2) + ' h';
+      tagFotos.value = '';
+      tagFotoPreview.innerHTML = '';
+    });
 
-  async function refreshMonat() {
-    const m = Number(monatMonat.value);
-    const y = Number(monatJahr.value);
-    if (!y) return;
-    const eintraege = await getAll('eintraege');
-    const projekte = await getAll('projekte');
+    // --- Woche ---
+    const wocheDatum = document.getElementById('woche-datum');
+    const wocheTableBody = document.querySelector('#woche-table tbody');
+    const wocheSummary = document.getElementById('woche-summary');
 
-    const firstDay = new Date(y, m, 1);
-    const nextMonth = new Date(y, m+1, 1);
-    const rows = [];
-    let sum = 0;
-    for (let d = new Date(firstDay); d < nextMonth; d.setDate(d.getDate()+1)) {
-      const ds = d.toISOString().slice(0,10);
-      const dayEntries = eintraege.filter(e => e.datum === ds);
-      const stunden = dayEntries.reduce((acc,e) => acc + (e.stunden || 0), 0);
-      sum += stunden;
-      const projSet = new Set();
-      const ortSet = new Set();
-      dayEntries.forEach(e => {
-        const p = projekte.find(x => x.id === e.projektId);
-        if (p) projSet.add(p.name);
-        if (e.ort) ortSet.add(e.ort);
+    async function refreshWoche() {
+      const basisDatum = wocheDatum.value || new Date().toISOString().slice(0,10);
+      wocheDatum.value = basisDatum;
+      const { monday, sunday } = getWeekRange(basisDatum);
+      const eintraege = await getAll('eintraege');
+      const projekte = await getAll('projekte');
+
+      const rows = [];
+      let sum = 0;
+      for (let d = new Date(monday); d <= sunday; d.setDate(d.getDate()+1)) {
+        const ds = d.toISOString().slice(0,10);
+        const dayEntries = eintraege.filter(e => e.datum === ds);
+        const stunden = dayEntries.reduce((acc,e) => acc + (e.stunden || 0), 0);
+        sum += stunden;
+        const projSet = new Set();
+        const ortSet = new Set();
+        dayEntries.forEach(e => {
+          const p = projekte.find(x => x.id === e.projektId);
+          if (p) projSet.add(p.name);
+          if (e.ort) ortSet.add(e.ort);
+        });
+        const first = dayEntries[0];
+        const startEnd = first ? (first.start + '–' + first.ende) : '';
+        rows.push({
+          tag: weekdayName(d),
+          datum: formatDate(d),
+          startEnd,
+          stunden,
+          projekte: Array.from(projSet).join(', '),
+          orte: Array.from(ortSet).join(', ')
+        });
+      }
+      wocheTableBody.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.tag}</td>
+          <td>${r.datum}</td>
+          <td>${r.startEnd}</td>
+          <td>${r.stunden.toFixed(2)}</td>
+          <td>${r.projekte}</td>
+          <td>${r.orte}</td>
+        `;
+        wocheTableBody.appendChild(tr);
       });
-      rows.push({
-        datum: formatDate(d),
-        tag: weekdayName(d),
-        stunden,
-        projekte: Array.from(projSet).join(', '),
-        orte: Array.from(ortSet).join(', ')
+      wocheSummary.textContent = 'Gesamtstunden in dieser Woche: ' + sum.toFixed(2) + ' h';
+    }
+
+    wocheDatum.addEventListener('change', refreshWoche);
+
+    // --- Monat ---
+    const monatMonat = document.getElementById('monat-monat');
+    const monatJahr = document.getElementById('monat-jahr');
+    const monatTableBody = document.querySelector('#monat-table tbody');
+    const monatSummary = document.getElementById('monat-summary');
+
+    monatMonat.addEventListener('change', refreshMonat);
+    monatJahr.addEventListener('change', refreshMonat);
+
+    async function refreshMonat() {
+      const m = Number(monatMonat.value);
+      const y = Number(monatJahr.value);
+      if (!y && y !== 0) return;
+      const eintraege = await getAll('eintraege');
+      const projekte = await getAll('projekte');
+
+      const firstDay = new Date(y, m, 1);
+      const nextMonth = new Date(y, m+1, 1);
+      const rows = [];
+      let sum = 0;
+      for (let d = new Date(firstDay); d < nextMonth; d.setDate(d.getDate()+1)) {
+        const ds = d.toISOString().slice(0,10);
+        const dayEntries = eintraege.filter(e => e.datum === ds);
+        const stunden = dayEntries.reduce((acc,e) => acc + (e.stunden || 0), 0);
+        sum += stunden;
+        const projSet = new Set();
+        const ortSet = new Set();
+        dayEntries.forEach(e => {
+          const p = projekte.find(x => x.id === e.projektId);
+          if (p) projSet.add(p.name);
+          if (e.ort) ortSet.add(e.ort);
+        });
+        rows.push({
+          datum: formatDate(d),
+          tag: weekdayName(d),
+          stunden,
+          projekte: Array.from(projSet).join(', '),
+          orte: Array.from(ortSet).join(', ')
+        });
+      }
+      monatTableBody.innerHTML = '';
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${r.datum}</td>
+          <td>${r.tag}</td>
+          <td>${r.stunden.toFixed(2)}</td>
+          <td>${r.projekte}</td>
+          <td>${r.orte}</td>
+        `;
+        monatTableBody.appendChild(tr);
+      });
+      monatSummary.textContent = 'Gesamtstunden im Monat: ' + sum.toFixed(2) + ' h';
+    }
+
+    // --- JSON-Export ---
+    async function exportDataAsJson() {
+      const projekte = await getAll('projekte');
+      const eintraege = await getAll('eintraege');
+
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        projekte,
+        eintraege
+      };
+
+      const jsonString = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const fileName = 'bautagebuch-backup-' + new Date().toISOString().slice(0,10) + '.json';
+
+      const file = new File([blob], fileName, { type: 'application/json' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Bautagebuch-Backup',
+            text: 'Backup aus meiner Bautagebuch-App.'
+          });
+          alert('Backup geteilt.');
+          return;
+        } catch (err) {
+          console.error('Share abgebrochen/fehlerhaft', err);
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('Backup-Datei wurde heruntergeladen.');
+    }
+
+    document.getElementById('export-json').addEventListener('click', exportDataAsJson);
+
+    // --- ZIP-Export (Gesamt) ---
+    async function exportAsZip() {
+      const projekte = await getAll('projekte');
+      const eintraege = await getAll('eintraege');
+
+      if (!eintraege.length) {
+        alert('Keine Einträge zum Export vorhanden.');
+        return;
+      }
+
+      const zip = new JSZip();
+      const metaFolder = zip.folder('meta');
+      metaFolder.file('projekte.json', JSON.stringify(projekte, null, 2));
+
+      const tageFolder = zip.folder('tage');
+      const byDate = {};
+      for (const e of eintraege) {
+        if (!byDate[e.datum]) byDate[e.datum] = [];
+        byDate[e.datum].push(e);
+      }
+
+      for (const datum of Object.keys(byDate)) {
+        const dayFolder = tageFolder.folder(datum);
+        const entries = byDate[datum];
+        let reportText = '';
+
+        reportText += `Datum: ${datum}
+`;
+        reportText += `Anzahl Einträge: ${entries.length}
+
+`;
+
+        let fotoIndex = 1;
+
+        for (const e of entries) {
+          const projekt = projekte.find(p => p.id === e.projektId);
+          const projektName = projekt ? projekt.name : 'Unbekanntes Projekt';
+
+          reportText += `=== Eintrag ===
+`;
+          reportText += `Projekt: ${projektName}
+`;
+          reportText += `Ort: ${e.ort || ''}
+`;
+          reportText += `Zeit: ${e.start} - ${e.ende} (${(e.stunden || 0).toFixed(2)} h)
+`;
+          reportText += `Tätigkeit:
+${e.taetigkeit || ''}
+
+`;
+
+          if (e.fotos && e.fotos.length) {
+            for (const dataUrl of e.fotos) {
+              const base64 = dataUrl.split(',')[1];
+              const mime = dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
+              const ext = mime === 'image/png' ? 'png' : 'jpg';
+              const filename = `foto-${fotoIndex}.${ext}`;
+              fotoIndex++;
+              dayFolder.file(filename, base64, { base64: true });
+            }
+          }
+        }
+        dayFolder.file(`bericht-${datum}.txt`, reportText);
+      }
+
+      const fileName = 'bautagebuch-export-' + new Date().toISOString().slice(0,10) + '.zip';
+      generateAndShareZip(zip, fileName);
+    }
+
+    document.getElementById('export-zip').addEventListener('click', exportAsZip);
+
+    // --- NEU: Projekt-Export ---
+    async function exportProjectAsZip() {
+      const projekte = await getAll('projekte');
+      const eintraege = await getAll('eintraege');
+
+      const exportProjektSelect = document.getElementById('export-projekt');
+      if (!exportProjektSelect || !exportProjektSelect.value) {
+        alert('Bitte ein Projekt für den Export auswählen.');
+        return;
+      }
+
+      const projektId = Number(exportProjektSelect.value);
+      const projekt = projekte.find(p => p.id === projektId);
+
+      if (!projekt) {
+        alert('Ausgewähltes Projekt wurde nicht gefunden.');
+        return;
+      }
+
+      const projektEintraege = eintraege.filter(e => e.projektId === projektId);
+      if (!projektEintraege.length) {
+        alert('Für dieses Projekt liegen keine Einträge vor.');
+        return;
+      }
+
+      const zip = new JSZip();
+      const metaFolder = zip.folder('meta');
+      metaFolder.file('projekt.json', JSON.stringify(projekt, null, 2));
+
+      const tageFolder = zip.folder('tage');
+      const byDate = {};
+      for (const e of projektEintraege) {
+        if (!byDate[e.datum]) byDate[e.datum] = [];
+        byDate[e.datum].push(e);
+      }
+
+      for (const datum of Object.keys(byDate)) {
+        const dayFolder = tageFolder.folder(datum);
+        const entries = byDate[datum];
+
+        let reportText = '';
+        reportText += `Projekt: ${projekt.name}
+`;
+        reportText += `Ort (Projekt): ${projekt.ort || ''}
+`;
+        reportText += `Datum: ${datum}
+`;
+        reportText += `Anzahl Einträge: ${entries.length}
+
+`;
+
+        let fotoIndex = 1;
+
+        for (const e of entries) {
+          reportText += `=== Eintrag ===
+`;
+          reportText += `Ort (Eintrag): ${e.ort || projekt.ort || ''}
+`;
+          reportText += `Zeit: ${e.start} - ${e.ende} (${(e.stunden || 0).toFixed(2)} h)
+`;
+          reportText += `Tätigkeit:
+${e.taetigkeit || ''}
+
+`;
+
+          if (e.fotos && e.fotos.length) {
+            for (const dataUrl of e.fotos) {
+              const base64 = dataUrl.split(',')[1];
+              const mime = dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';'));
+              const ext = mime === 'image/png' ? 'png' : 'jpg';
+              const filename = `foto-${fotoIndex}.${ext}`;
+              fotoIndex++;
+              dayFolder.file(filename, base64, { base64: true });
+            }
+          }
+        }
+        dayFolder.file(`bericht-${datum}.txt`, reportText);
+      }
+
+      const safeProjektName = projekt.name.replace(/[^a-z0-9-_]+/gi, '_');
+      const fileName = `bautagebuch-${safeProjektName}-${new Date().toISOString().slice(0,10)}.zip`;
+      generateAndShareZip(zip, fileName);
+    }
+
+    function generateAndShareZip(zip, fileName) {
+      zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
+        .then(async (content) => {
+          const blob = content;
+          const file = new File([blob], fileName, { type: 'application/zip' });
+
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: 'Bautagebuch-Export',
+                text: 'Export-Datei aus der Bautagebuch-App.'
+              });
+              return;
+            } catch (err) {
+              console.error('Share abgebrochen/Fehler', err);
+            }
+          }
+
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          alert('ZIP-Datei wurde heruntergeladen.');
+        })
+        .catch(err => {
+          console.error('ZIP-Fehler:', err);
+          alert('Fehler beim Erzeugen des ZIP-Exports.');
+        });
+    }
+
+    document.getElementById('export-zip-projekt')
+      .addEventListener('click', exportProjectAsZip);
+
+    // --- Init on load ---
+    (async function() {
+      await openDb();
+      const projekte = await getAll('projekte');
+      if (projekte.length === 0) {
+        await addOrPut('projekte', { name:'Projekt 1', ort:'Ort 1', aktiv:true });
+      }
+      await refreshProjekte();
+      const today = new Date().toISOString().slice(0,10);
+      tagDatum.value = today;
+      wocheDatum.value = today;
+      const now = new Date();
+      monatMonat.value = now.getMonth();
+      monatJahr.value = now.getFullYear();
+      refreshWoche();
+      refreshMonat();
+    })();
+
+    // Service Worker registrieren
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js')
+          .catch(err => console.error('Service Worker Fehler', err));
       });
     }
-    monatTableBody.innerHTML = '';
-    rows.forEach(r => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${r.datum}</td>
-        <td>${r.tag}</td>
-        <td>${r.stunden.toFixed(2)}</td>
-        <td>${r.projekte}</td>
-        <td>${r.orte}</td>
-      `;
-      monatTableBody.appendChild(tr);
-    });
-    monatSummary.textContent = 'Gesamtstunden im Monat: ' + sum.toFixed(2) + ' h';
-  }
-
-  // --- Init on load ---
-  (async function() {
-    await openDb();
-    // Wenn keine Projekte vorhanden, Dummy-Projekt anlegen
-    const projekte = await getAll('projekte');
-    if (projekte.length === 0) {
-      await addOrPut('projekte', { name:'Projekt 1', ort:'Ort 1', aktiv:true });
-    }
-    refreshProjekte();
-    // Default Datum heute
-    const today = new Date().toISOString().slice(0,10);
-    tagDatum.value = today;
-    wocheDatum.value = today;
-    const now = new Date();
-    monatMonat.value = now.getMonth();
-    monatJahr.value = now.getFullYear();
-    refreshWoche();
-    refreshMonat();
-  })();
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js')
-        .catch(err => console.error('Service Worker Fehler', err));
-    });
-  }
-</script>
+  </script>
 </body>
 </html>
